@@ -1,2 +1,31 @@
-# blood-stock-auto
-Automated Blood Stock Registration System
+# 🩸 نظام التسجيل التلقائي لرصيد بنك الدم (7 صباحاً و 7 مساءً)
+
+هذا النظام يقرأ صورة جدول الرصيد من الواتساب بالذكاء الاصطناعي ويسجلها أوتوماتيك على موقع وزارة الصحة (`geohealthmap.mohp.gov.eg`) سواء فوراً أو الساعة **7 الصبح و 7 بالليل وأنت نايم وموبايلك مقفول**.
+
+---
+
+## 🛠️ خطوات التشغيل لمرة واحدة فقط (في 3 دقائق):
+
+### 1. رفع الملفات على حسابك في GitHub (مجاني 100%)
+1. ادخل على [github.com](https://github.com) واعمل مستودع جديد (**New Repository**) سمّيه مثلاً `blood-stock-auto` وخليه **Public** (عشان صفحة الموبايل و GitHub Actions تشتغل بلا حدود مجاناً - متقلقش، اليوزر والباسورد بيتحفظوا في Secrets مخفية ومشفرة محدش يقدر يشوفها أبداً).
+2. ارفع الملفات الموجودة في الفولدر ده (`index.html`, `bot_submit.py`, `stock_data.json`, وفولدر `.github/workflows/auto_submit.yml`).
+
+### 2. إضافة اسم المستخدم وكلمة المرور بتوع موقع الوزارة في Secrets
+1. جوه المستودع على GitHub، ادخل على **Settings** ⬅️ **Secrets and variables** ⬅️ **Actions**.
+2. اضغط **New repository secret** وضيف المتغيرات دي:
+   - **`MOHP_USERNAME`**: اسم المستخدم بتاعك على موقع وزارة الصحة.
+   - **`MOHP_PASSWORD`**: كلمة المرور بتاعتك على موقع وزارة الصحة.
+   - *(اختياري لو عايز يوصلك سكرين شوت على تليجرام بعد كل تسجيل)*:
+     - **`TELEGRAM_BOT_TOKEN`**: توكن بوت التليجرام.
+     - **`TELEGRAM_CHAT_ID`**: الـ ID بتاع حسابك على تليجرام.
+
+### 3. تفعيل لينك الأبليكيشن على الموبايل (GitHub Pages)
+1. من **Settings** ⬅️ **Pages**، تحت **Branch** اختار `main` واضغط **Save**.
+2. هيظهرلك لينك خاص بيك تفتحه من الموبايل، ومن متصفح الموبايل اضغط **"إضافة إلى الشاشة الرئيسية (Add to Home Screen)"** عشان ينزل كأيقونة أبليكيشن على موبايلك!
+
+### 4. إعداد مفاتيح الأبليكيشن من الموبايل (مرة واحدة)
+افتح الأبليكيشن واضغط **⚙️ الإعدادات** وحط:
+- **مفتاح Gemini API المجاني**: تقدر تجيبه في ثانية مجاناً من [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+- **GitHub Token**: من حسابك في GitHub (Settings -> Developer settings -> Personal access tokens -> Tokens classic -> Generate new token، وعلم على `repo` و `workflow`).
+- **اسم المستودع**: مثلاً `username/blood-stock-auto`.
+واضغط **حفظ الإعدادات**.
