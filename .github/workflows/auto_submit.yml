@@ -1,0 +1,91 @@
+name: Auto Submit Blood Stock (7 AM & 7 PM)
+
+on:
+  schedule:
+    # يعمل تلقائياً الساعة 6:45 صباحاً و 6:45 مساءً بتوقيت مصر (يدعم التوقيت الصيفي والشتوي تلقائياً)
+    - cron: "45 3,4,15,16 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "تجربة فقط بدون الحفظ النهائي (Dry Run)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  submit-stock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Cairo Time & Auto-Schedule Status
+        id: check_run
+        run: |
+          python3 - << 'EOF'
+          import json, os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+          with open("stock_data.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          if event_name == "workflow_dispatch":
+              print("should_run=true")
+              with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                  out.write("should_run=true\n")
+          else:
+              now_cairo = datetime.now(ZoneInfo("Africa/Cairo"))
+              print(f"Current Cairo time: {now_cairo.strftime('%Y-%m-%d %H:%M:%S')}")
+              enabled = data.get("auto_schedule_enabled", True)
+              # ننفذ فقط عندما تكون الساعة 6 صباحاً (لدورة 7 ص) أو 18 مساءً (لدورة 7 م) بتوقيت القاهرة
+              if enabled and now_cairo.hour in (6, 18):
+                  with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                      out.write("should_run=true\n")
+              else:
+                  print("Skipping this cron slot (either disabled or different DST offset hour).")
+                  with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                      out.write("should_run=false\n")
+          EOF
+
+      - name: Set up Python
+        if: steps.check_run.outputs.should_run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright & Chromium
+        if: steps.check_run.outputs.should_run == 'true'
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Run Blood Stock Registration Bot
+        if: steps.check_run.outputs.should_run == 'true'
+        env:
+          MOHP_USERNAME: ${{ secrets.MOHP_USERNAME }}
+          MOHP_PASSWORD: ${{ secrets.MOHP_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python bot_submit.py --dry-run
+          else
+            python bot_submit.py
+          fi
+
+      - name: Upload Confirmation Screenshots
+        if: always() && steps.check_run.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: submission-screenshots-${{ github.run_number }}
+          path: |
+            *.png
+          if-no-files-found: ignore
+          retention-days: 14
