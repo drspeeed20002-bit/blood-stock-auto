@@ -1,0 +1,114 @@
+name: Extract Stock Numbers from Image (AI Vision)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  models: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract numbers using GitHub Models (GPT-4o Vision)
+        env:
+          GH_MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - << 'EOF'
+          import base64, json, os, urllib.request
+          from datetime import datetime
+
+          img_path = "latest_stock.jpg"
+          if not os.path.exists(img_path):
+              raise FileNotFoundError("latest_stock.jpg not found")
+
+          with open(img_path, "rb") as f:
+              b64_img = base64.b64encode(f.read()).decode("utf-8")
+
+          prompt = """أنت خبير في قراءة جدول رصيد بنك الدم (مثل رصيد بنك دم منية النصر).
+          استخرج الأرقام من الجدول بدقة (حوّل الأرقام العربية الهندية ١٢٣ إلى أرقام إنجليزية 123، وأي علامة شرطة "-" تعتبر 0).
+          الجدول مرتب من اليمين لليسار:
+          الأعمدة من اليمين: الفصيله | A+ | A- | B+ | B- | O+ | O- | AB+ | AB- | عمود مجموع كرات الدم | A | B | AB | O | المجموع (مجموع البلازما).
+          الصف الأول: "المفحوص" (يحتوي على أرصدة كرات الدم المفحوصة + أرصدة البلازما المفحوصة).
+          الصف الثاني: "الغير مفحوص" (نحتاج منه عمود مجموع كرات الدم الغير مفحوصة ليوضع في خانة under_test).
+          أرجع النتيجة بصيغة JSON فقط بدون أي نص إضافي بهذا الشكل:
+          {
+            "prbcs": {
+              "under_test": 19,
+              "A_pos": 13,
+              "A_neg": 1,
+              "B_pos": 19,
+              "B_neg": 2,
+              "O_pos": 7,
+              "O_neg": 2,
+              "AB_pos": 3,
+              "AB_neg": 0
+            },
+            "ffp": {
+              "A": 142,
+              "B": 182,
+              "AB": 12,
+              "O": 231
+            }
+          }"""
+
+          payload = {
+              "model": "openai/gpt-4o",
+              "response_format": {"type": "json_object"},
+              "messages": [
+                  {
+                      "role": "user",
+                      "content": [
+                          {"type": "text", "text": prompt},
+                          {
+                              "type": "image_url",
+                              "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}
+                          }
+                      ]
+                  }
+              ],
+              "temperature": 0.0
+          }
+
+          req = urllib.request.Request(
+              "https://models.github.ai/inference/chat/completions",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Content-Type": "application/json",
+                  "Authorization": f"Bearer {os.environ['GH_MODELS_TOKEN']}"
+              },
+              method="POST"
+          )
+
+          with urllib.request.urlopen(req, timeout=45) as resp:
+              res_data = json.loads(resp.read().decode("utf-8"))
+
+          raw_content = res_data["choices"][0]["message"]["content"]
+          extracted = json.loads(raw_content)
+
+          with open("stock_data.json", "r", encoding="utf-8") as f:
+              stock_data = json.load(f)
+
+          stock_data["updated_at"] = datetime.utcnow().isoformat() + "Z"
+          stock_data["source_date"] = datetime.utcnow().strftime("%Y-%m-%d")
+          stock_data["prbcs"] = extracted.get("prbcs", stock_data.get("prbcs", {}))
+          stock_data["ffp"] = extracted.get("ffp", stock_data.get("ffp", {}))
+
+          with open("stock_data.json", "w", encoding="utf-8") as f:
+              json.dump(stock_data, f, ensure_ascii=False, indent=2)
+
+          print("Successfully extracted:", json.dumps(extracted, ensure_ascii=False))
+          EOF
+
+      - name: Commit updated stock_data.json
+        run: |
+          git config user.name "BloodStockBot"
+          git config user.email "bot@users.noreply.github.com"
+          git add stock_data.json
+          git diff --staged --quiet || git commit -m "AI extracted stock numbers from uploaded image"
+          git push
