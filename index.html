@@ -627,30 +627,30 @@
 
       try {
         const base64Data = await compressAndConvertToBase64(file);
-        const prompt = `أنت خبير في قراءة جدول رصيد بنك الدم (مثل رصيد بنك دم منية النصر).
-استخرج الأرقام من الجدول بدقة (حوّل الأرقام العربية الهندية ١٢٣ إلى أرقام إنجليزية 123، وأي علامة شرطة "-" تعتبر 0).
+        const prompt = `اقرأ جدول رصيد بنك الدم في الصورة بدقة (حوّل الأرقام العربية الهندية ١٢٣ إلى أرقام إنجليزية 123، وأي علامة شرطة "-" تعتبر 0).
+ممنوع منعاً باتاً جمع أي صفوف مع بعضها! خذ الأرقام كما هي مكتوبة في الخانات فقط:
 الجدول مرتب من اليمين لليسار:
-الأعمدة من اليمين: الفصيله | A+ | A- | B+ | B- | O+ | O- | AB+ | AB- | عمود مجموع كرات الدم | A | B | AB | O | المجموع (مجموع البلازما).
-الصف الأول: "المفحوص" (يحتوي على أرصدة كرات الدم المفحوصة + أرصدة البلازما المفحوصة).
-الصف الثاني: "الغير مفحوص" (نحتاج منه عمود مجموع كرات الدم الغير مفحوصة ليوضع في خانة under_test).
-أرجع النتيجة بصيغة JSON فقط بدون أي نص إضافي بهذا الشكل:
+الأعمدة من اليمين: الفصيله | A+ | A- | B+ | B- | O+ | O- | AB+ | AB- | عمود مجموع كرات الدم | A | B | AB | O | المجموع.
+1. من الصف الأول فقط (المفحوص): خذ أرقام الفصائل (A+, A-, B+, B-, O+, O-, AB+, AB-) وضعها في prbcs كما هي بدون جمعها مع أي صف آخر، وخذ أرقام البلازما (A, B, AB, O) من نفس الصف الأول (المفحوص) وضعها في ffp.
+2. من الصف الثاني (الغير مفحوص): خذ فقط الرقم المكتوب في عمود مجموع كرات الدم (العمود العاشر من اليمين بعد AB-) وضعه في خانة under_test.
+أرجع النتيجة بصيغة JSON فقط بدون أي نص إضافي:
 {
   "prbcs": {
-    "under_test": 19,
-    "A_pos": 13,
-    "A_neg": 1,
-    "B_pos": 19,
-    "B_neg": 2,
-    "O_pos": 7,
-    "O_neg": 2,
-    "AB_pos": 3,
+    "under_test": 0,
+    "A_pos": 0,
+    "A_neg": 0,
+    "B_pos": 0,
+    "B_neg": 0,
+    "O_pos": 0,
+    "O_neg": 0,
+    "AB_pos": 0,
     "AB_neg": 0
   },
   "ffp": {
-    "A": 142,
-    "B": 182,
-    "AB": 12,
-    "O": 231
+    "A": 0,
+    "B": 0,
+    "AB": 0,
+    "O": 0
   }
 }`;
 
@@ -683,22 +683,33 @@
         }
 
         if (apiKey) {
-          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: prompt },
-                  { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
-                ]
-              }],
-              generationConfig: { responseMimeType: 'application/json' }
-            })
-          });
-          const data = await resp.json();
-          if (data.error) throw new Error(data.error.message);
-          const parsed = JSON.parse(data.candidates[0].content.parts[0].text);
+          const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+          let parsed = null;
+          let lastErr = null;
+          for (const modelName of modelsToTry) {
+            try {
+              const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [
+                      { text: prompt },
+                      { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+                    ]
+                  }],
+                  generationConfig: { responseMimeType: 'application/json' }
+                })
+              });
+              const data = await resp.json();
+              if (data.error) throw new Error(data.error.message);
+              parsed = JSON.parse(data.candidates[0].content.parts[0].text);
+              if (parsed) break;
+            } catch (e) {
+              lastErr = e;
+            }
+          }
+          if (!parsed) throw lastErr || new Error('تعذر قراءة الصورة');
           applyParsedData(parsed);
           showStatus('✅ تم استخراج جميع الأرقام من الصورة بنجاح! راجعها واضغط حفظ.', 'success');
           return;
