@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1e293b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>مسجل رصيد بنك الدم التلقائي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --navy: #1e293b;
+      --red: #dc2626;
+      --red-dark: #b91c1c;
+      --green: #16a34a;
+      --green-dark: #15803d;
+      --blue: #0284c7;
+      --amber: #d97706;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 40px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #fff;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 17px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .settings-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Upload Box */
+    .upload-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 18px;
+      border: 2px dashed #94a3b8;
+      text-align: center;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .upload-btn-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .upload-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #fee2e2;
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+    .upload-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+    .upload-sub {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    #imageInput { display: none; }
+    #previewImg {
+      max-width: 100%;
+      max-height: 220px;
+      border-radius: 10px;
+      margin-top: 12px;
+      display: none;
+      border: 1px solid var(--border);
+    }
+
+    /* Status Alert */
+    .status-box {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.6;
+    }
+    .status-box.info { display: block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .status-box.success { display: block; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-box.error { display: block; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    /* Section Card matching MOHP UI */
+    .section-card {
+      background: var(--card);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+    .section-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-header .title-en {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .section-header .badge-total {
+      background: var(--red);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .section-header .sub-ar {
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 14px;
+    }
+    .blood-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      background: #fafafa;
+    }
+    .blood-box label {
+      display: block;
+      font-size: 14px;
+      font-weight: 800;
+      color: #b91c1c;
+      margin-bottom: 6px;
+      direction: ltr;
+    }
+    .blood-box.under-test label {
+      color: var(--amber);
+      direction: rtl;
+    }
+    .blood-box input {
+      width: 100%;
+      padding: 8px;
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'Cairo', sans-serif;
+      text-align: center;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+    }
+    .blood-box input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(2,132,199,0.15);
+    }
+
+    /* Action Buttons */
+    .actions-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+    .btn {
+      width: 100%;
+      padding: 14px 16px;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 15.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: wait; }
+    .btn-red {
+      background: var(--red);
+      color: #fff;
+    }
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+    }
+
+    /* Settings Panel */
+    #settingsPanel {
+      display: none;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--navy);
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 13px;
+      direction: ltr;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 4px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    details summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--muted);
+      padding: 10px 14px;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🩸 مسجل رصيد الدم التلقائي</h1>
+    <button class="settings-btn" onclick="toggleSettings()">⚙️ الإعدادات</button>
+  </header>
+
+  <div class="container">
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel">
+      <h3 style="margin-bottom:12px; font-size:15px;">⚙️ إعدادات الربط السحابي (تُحفظ على جهازك)</h3>
+      <div class="form-group">
+        <label>GitHub Personal Access Token:</label>
+        <input type="password" id="cfgGithubToken" placeholder="ghp_..." />
+      </div>
+      <div class="form-group">
+        <label>اسم مستودع GitHub:</label>
+        <input type="text" id="cfgGithubRepo" value="drspeeed20002-bit/blood-stock-auto" />
+      </div>
+      <div class="form-group">
+        <label>مفتاح Gemini API (اختياري):</label>
+        <input type="password" id="cfgGeminiKey" placeholder="اختياري - يعمل بدونه تلقائياً" />
+      </div>
+      <button class="btn btn-green" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+    </div>
+
+    <!-- Step 1: Upload WhatsApp Photo -->
+    <div class="upload-card" id="dropZone">
+      <label class="upload-btn-label" for="imageInput">
+        <div class="upload-icon">📸</div>
+        <div class="upload-title">اضغط لرفع صورة الرصيد من الواتساب</div>
+        <div class="upload-sub">هيقرأ جدول (المفحوص + الغير مفحوص + البلازما) ويملأ الخانات أوتوماتيك</div>
+      </label>
+      <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)" />
+      <img id="previewImg" alt="صورة الرصيد" />
+    </div>
+
+    <!-- Status Alert -->
+    <div id="statusBox" class="status-box"></div>
+
+    <!-- Section 1: PRBCs -->
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <div style="font-weight:700; font-size:13px;">المتاح بالمخزن حالياً (كرات دم)</div>
+          <div class="sub-ar">المفحوص + تحت الفحص</div>
+        </div>
+        <div class="badge-total" id="prbcsTotalBadge">الإجمالي: 66 وحدة</div>
+        <div class="title-en">PRBCs</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="blood-box under-test">
+          <label>تحت الفحص (الغير مفحوص)</label>
+          <input type="number" id="prbcs_under_test" value="19" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>A pos</label>
+          <input type="number" id="prbcs_A_pos" value="13" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>A neg</label>
+          <input type="number" id="prbcs_A_neg" value="1" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>B pos</label>
+          <input type="number" id="prbcs_B_pos" value="19" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>B neg</label>
+          <input type="number" id="prbcs_B_neg" value="2" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>O pos</label>
+          <input type="number" id="prbcs_O_pos" value="7" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>O neg</label>
+          <input type="number" id="prbcs_O_neg" value="2" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>AB pos</label>
+          <input type="number" id="prbcs_AB_pos" value="3" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box" style="grid-column: span 2;">
+          <label>AB neg</label>
+          <input type="number" id="prbcs_AB_neg" value="0" oninput="recalcTotals()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: FFP (Plasma) -->
+    <div class="section-card">
+      <div class="section-header">
+        <div>
+          <div style="font-weight:700; font-size:13px;">المتاح بالمخزن حالياً (بلازما)</div>
+          <div class="sub-ar">المفحوص بلازما</div>
+        </div>
+        <div class="badge-total" id="ffpTotalBadge">الإجمالي: 567 وحدة</div>
+        <div class="title-en">FFP</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="blood-box">
+          <label>A</label>
+          <input type="number" id="ffp_A" value="142" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>B</label>
+          <input type="number" id="ffp_B" value="182" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>O</label>
+          <input type="number" id="ffp_O" value="231" oninput="recalcTotals()" />
+        </div>
+        <div class="blood-box">
+          <label>AB</label>
+          <input type="number" id="ffp_AB" value="12" oninput="recalcTotals()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Optional FP & Platelets (Default 0) -->
+    <details>
+      <summary>➕ عرض خانات FP والصفائح Platelets (الافتراضي: أصفار)</summary>
+      <div class="section-card" style="margin-top:10px;">
+        <div class="section-header">
+          <span class="sub-ar">بلازما مجمدة</span>
+          <span class="title-en">FP</span>
+        </div>
+        <div class="grid-2">
+          <div class="blood-box"><label>A</label><input type="number" id="fp_A" value="0" /></div>
+          <div class="blood-box"><label>B</label><input type="number" id="fp_B" value="0" /></div>
+          <div class="blood-box"><label>O</label><input type="number" id="fp_O" value="0" /></div>
+          <div class="blood-box"><label>AB</label><input type="number" id="fp_AB" value="0" /></div>
+        </div>
+      </div>
+
+      <div class="section-card" style="margin-top:10px;">
+        <div class="section-header">
+          <span class="sub-ar">صفائح دموية</span>
+          <span class="title-en">Platelets</span>
+        </div>
+        <div class="grid-2">
+          <div class="blood-box"><label>A pos</label><input type="number" id="plt_A_pos" value="0" /></div>
+          <div class="blood-box"><label>A neg</label><input type="number" id="plt_A_neg" value="0" /></div>
+          <div class="blood-box"><label>B pos</label><input type="number" id="plt_B_pos" value="0" /></div>
+          <div class="blood-box"><label>B neg</label><input type="number" id="plt_B_neg" value="0" /></div>
+          <div class="blood-box"><label>O pos</label><input type="number" id="plt_O_pos" value="0" /></div>
+          <div class="blood-box"><label>O neg</label><input type="number" id="plt_O_neg" value="0" /></div>
+          <div class="blood-box"><label>AB pos</label><input type="number" id="plt_AB_pos" value="0" /></div>
+          <div class="blood-box"><label>AB neg</label><input type="number" id="plt_AB_neg" value="0" /></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Actions -->
+    <div class="actions-card">
+      <div class="toggle-row">
+        <span>⏰ تفعيل التسجيل التلقائي (7 ص و 7 م وأنت نايم)</span>
+        <input type="checkbox" id="autoScheduleToggle" checked style="width:20px; height:20px;" />
+      </div>
+
+      <button class="btn btn-green" id="btnSchedule" onclick="syncToCloud(false)">
+        🌙 حفظ الأرقام للتسجيل التلقائي (7 ص / 7 م)
+      </button>
+
+      <button class="btn btn-red" id="btnSubmitNow" onclick="syncToCloud(true)">
+        🚀 حفظ وإرسال للموقع الآن فوراً
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    const DEFAULT_REPO = 'drspeeed20002-bit/blood-stock-auto';
+
+    function checkUrlAutoSetup() {
+      if (window.location.hash && window.location.hash.length > 1) {
+        const params = new URLSearchParams(window.location.hash.substring(1));
+        const t = params.get('token');
+        const r = params.get('repo') || DEFAULT_REPO;
+        if (t) {
+          localStorage.setItem('mohp_gh_token', t.trim());
+          localStorage.setItem('mohp_gh_repo', r.trim());
+          history.replaceState(null, '', window.location.pathname);
+          setTimeout(() => {
+            showStatus('✅ تم ربط موبايلك بالسيرفر السحابي تلقائياً! يمكنك الآن رفع صورة الرصيد مباشرة.', 'success');
+          }, 300);
+        }
+      }
+    }
+
+    function loadSettings() {
+      checkUrlAutoSetup();
+      document.getElementById('cfgGeminiKey').value = localStorage.getItem('mohp_gemini_key') || '';
+      document.getElementById('cfgGithubToken').value = localStorage.getItem('mohp_gh_token') || '';
+      document.getElementById('cfgGithubRepo').value = localStorage.getItem('mohp_gh_repo') || DEFAULT_REPO;
+      recalcTotals();
+      fetchLatestStockFromRepo();
+    }
+
+    async function fetchLatestStockFromRepo() {
+      const token = localStorage.getItem('mohp_gh_token');
+      const repo = localStorage.getItem('mohp_gh_repo') || DEFAULT_REPO;
+      if (!token) return;
+      try {
+        const resp = await fetch(`https://api.github.com/repos/${repo}/contents/stock_data.json`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+        });
+        if (!resp.ok) return;
+        const meta = await resp.json();
+        const jsonStr = decodeURIComponent(escape(atob(meta.content.replace(/\n/g, ''))));
+        const data = JSON.parse(jsonStr);
+        applyParsedData(data);
+      } catch (e) {
+        console.warn('Could not fetch initial stock_data.json:', e);
+      }
+    }
+
+    function applyParsedData(parsed) {
+      if (parsed.prbcs) {
+        document.getElementById('prbcs_under_test').value = parsed.prbcs.under_test ?? 0;
+        document.getElementById('prbcs_A_pos').value = parsed.prbcs.A_pos ?? 0;
+        document.getElementById('prbcs_A_neg').value = parsed.prbcs.A_neg ?? 0;
+        document.getElementById('prbcs_B_pos').value = parsed.prbcs.B_pos ?? 0;
+        document.getElementById('prbcs_B_neg').value = parsed.prbcs.B_neg ?? 0;
+        document.getElementById('prbcs_O_pos').value = parsed.prbcs.O_pos ?? 0;
+        document.getElementById('prbcs_O_neg').value = parsed.prbcs.O_neg ?? 0;
+        document.getElementById('prbcs_AB_pos').value = parsed.prbcs.AB_pos ?? 0;
+        document.getElementById('prbcs_AB_neg').value = parsed.prbcs.AB_neg ?? 0;
+      }
+      if (parsed.ffp) {
+        document.getElementById('ffp_A').value = parsed.ffp.A ?? 0;
+        document.getElementById('ffp_B').value = parsed.ffp.B ?? 0;
+        document.getElementById('ffp_O').value = parsed.ffp.O ?? 0;
+        document.getElementById('ffp_AB').value = parsed.ffp.AB ?? 0;
+      }
+      recalcTotals();
+    }
+
+    function toggleSettings() {
+      const panel = document.getElementById('settingsPanel');
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function saveSettings() {
+      localStorage.setItem('mohp_gemini_key', document.getElementById('cfgGeminiKey').value.trim());
+      localStorage.setItem('mohp_gh_token', document.getElementById('cfgGithubToken').value.trim());
+      localStorage.setItem('mohp_gh_repo', document.getElementById('cfgGithubRepo').value.trim() || DEFAULT_REPO);
+      document.getElementById('settingsPanel').style.display = 'none';
+      showStatus('✅ تم حفظ الإعدادات على جهازك بنجاح.', 'success');
+    }
+
+    function showStatus(msg, type = 'info') {
+      const box = document.getElementById('statusBox');
+      box.className = 'status-box ' + type;
+      box.innerHTML = msg;
+    }
+
+    function val(id) {
+      const n = parseInt(document.getElementById(id).value, 10);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function recalcTotals() {
+      const prbcsTested = val('prbcs_A_pos') + val('prbcs_A_neg') + val('prbcs_B_pos') + val('prbcs_B_neg') +
+                          val('prbcs_O_pos') + val('prbcs_O_neg') + val('prbcs_AB_pos') + val('prbcs_AB_neg');
+      const prbcsTotal = prbcsTested + val('prbcs_under_test');
+      document.getElementById('prbcsTotalBadge').textContent = `الإجمالي: ${prbcsTotal} وحدة (مفحوص: ${prbcsTested})`;
+
+      const ffpTotal = val('ffp_A') + val('ffp_B') + val('ffp_O') + val('ffp_AB');
+      document.getElementById('ffpTotalBadge').textContent = `الإجمالي: ${ffpTotal} وحدة`;
+    }
+
+    async function putRepoFile(repo, token, path, base64Content, message) {
+      const fileUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
+      let sha = undefined;
+      const getResp = await fetch(fileUrl, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+      });
+      if (getResp.ok) {
+        const meta = await getResp.json();
+        sha = meta.sha;
+      }
+      const putResp = await fetch(fileUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message, content: base64Content, sha })
+      });
+      if (!putResp.ok) {
+        const err = await putResp.json();
+        throw new Error(err.message || `Failed to upload ${path}`);
+      }
+    }
+
+    async function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const preview = document.getElementById('previewImg');
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+
+      const apiKey = localStorage.getItem('mohp_gemini_key');
+      const ghToken = localStorage.getItem('mohp_gh_token');
+      const repo = localStorage.getItem('mohp_gh_repo') || DEFAULT_REPO;
+
+      if (!apiKey && !ghToken) {
+        toggleSettings();
+        showStatus('⚠️ من فضلك أدخل كود GitHub Token في الإعدادات أولاً.', 'error');
+        return;
+      }
+
+      showStatus('⏳ جاري قراءة جدول الرصيد من الصورة بالذكاء الاصطناعي...', 'info');
+
+      try {
+        const base64Data = await compressAndConvertToBase64(file);
+        const prompt = `أنت خبير في قراءة جدول رصيد بنك الدم (مثل رصيد بنك دم منية النصر).
+استخرج الأرقام من الجدول بدقة (حوّل الأرقام العربية الهندية ١٢٣ إلى أرقام إنجليزية 123، وأي علامة شرطة "-" تعتبر 0).
+الجدول مرتب من اليمين لليسار:
+الأعمدة من اليمين: الفصيله | A+ | A- | B+ | B- | O+ | O- | AB+ | AB- | عمود مجموع كرات الدم | A | B | AB | O | المجموع (مجموع البلازما).
+الصف الأول: "المفحوص" (يحتوي على أرصدة كرات الدم المفحوصة + أرصدة البلازما المفحوصة).
+الصف الثاني: "الغير مفحوص" (نحتاج منه عمود مجموع كرات الدم الغير مفحوصة ليوضع في خانة under_test).
+أرجع النتيجة بصيغة JSON فقط بدون أي نص إضافي بهذا الشكل:
+{
+  "prbcs": {
+    "under_test": 19,
+    "A_pos": 13,
+    "A_neg": 1,
+    "B_pos": 19,
+    "B_neg": 2,
+    "O_pos": 7,
+    "O_neg": 2,
+    "AB_pos": 3,
+    "AB_neg": 0
+  },
+  "ffp": {
+    "A": 142,
+    "B": 182,
+    "AB": 12,
+    "O": 231
+  }
+}`;
+
+        if (apiKey) {
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: prompt },
+                  { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+                ]
+              }],
+              generationConfig: { responseMimeType: 'application/json' }
+            })
+          });
+          const data = await resp.json();
+          if (data.error) throw new Error(data.error.message);
+          const parsed = JSON.parse(data.candidates[0].content.parts[0].text);
+          applyParsedData(parsed);
+          showStatus('✅ تم استخراج جميع الأرقام من الصورة بنجاح! راجعها واضغط حفظ.', 'success');
+          return;
+        }
+
+        // محاولة القراءة المباشرة أولاً، وإن لم تتوفر صلاحية models:read في التوكن الكلاسيكي، نستخدم السحابة تلقائياً
+        let directSuccess = false;
+        try {
+          const resp = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${ghToken}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              response_format: { type: 'json_object' },
+              messages: [{
+                role: 'user',
+                content: [
+                  { type: 'text', text: prompt },
+                  { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Data}` } }
+                ]
+              }],
+              temperature: 0.0
+            })
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const parsed = JSON.parse(data.choices[0].message.content);
+            applyParsedData(parsed);
+            directSuccess = true;
+            showStatus('✅ تم استخراج جميع الأرقام من الصورة وحفظها بنجاح!', 'success');
+          }
+        } catch (e) {
+          console.log('Direct browser vision fallback to GitHub Action:', e);
+        }
+
+        if (!directSuccess) {
+          showStatus('⏳ جاري رفع الصورة للسحابة الذكية واستخراج الأرقام تلقائياً (خلال 15 ثانية)...', 'info');
+          const beforeResp = await fetch(`https://api.github.com/repos/${repo}/contents/stock_data.json`, {
+            headers: { 'Authorization': `Bearer ${ghToken}`, 'Accept': 'application/vnd.github+json' }
+          });
+          const beforeMeta = beforeResp.ok ? await beforeResp.json() : {};
+          const oldSha = beforeMeta.sha;
+
+          await putRepoFile(repo, ghToken, 'latest_stock.jpg', base64Data, 'Upload latest WhatsApp stock image');
+
+          await fetch(`https://api.github.com/repos/${repo}/actions/workflows/extract_image.yml/dispatches`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${ghToken}`,
+              'Accept': 'application/vnd.github+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ref: 'main' })
+          });
+
+          // انتظار تحديث ملف stock_data.json من السحابة
+          let updated = false;
+          for (let i = 0; i < 18; i++) {
+            await new Promise(r => setTimeout(r, 3000));
+            const pollResp = await fetch(`https://api.github.com/repos/${repo}/contents/stock_data.json?t=${Date.now()}`, {
+              headers: { 'Authorization': `Bearer ${ghToken}`, 'Accept': 'application/vnd.github+json' }
+            });
+            if (pollResp.ok) {
+              const pollMeta = await pollResp.json();
+              if (pollMeta.sha && pollMeta.sha !== oldSha) {
+                const jsonStr = decodeURIComponent(escape(atob(pollMeta.content.replace(/\n/g, ''))));
+                const newData = JSON.parse(jsonStr);
+                applyParsedData(newData);
+                updated = true;
+                break;
+              }
+            }
+          }
+
+          if (updated) {
+            showStatus('✅ تم قراءة الصورة من السحابة وتحديث جميع الخانات وجدولتها لـ 7 ص و 7 م تلقائياً!', 'success');
+          } else {
+            showStatus('⚠️ تم رفع الصورة للسحابة وجاري استخراج الأرقام، أعد تحميل الصفحة بعد ثوانٍ أو راجع الخانات.', 'info');
+          }
+        }
+      } catch (err) {
+        showStatus('❌ حدث خطأ أثناء قراءة الصورة: ' + err.message, 'error');
+      }
+    }
+
+    function compressAndConvertToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 1400;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve(dataUrl.split(',')[1]);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    function buildStockPayload() {
+      return {
+        updated_at: new Date().toISOString(),
+        source_date: new Date().toISOString().slice(0, 10),
+        auto_schedule_enabled: document.getElementById('autoScheduleToggle').checked,
+        prbcs: {
+          under_test: val('prbcs_under_test'),
+          A_pos: val('prbcs_A_pos'),
+          A_neg: val('prbcs_A_neg'),
+          B_pos: val('prbcs_B_pos'),
+          B_neg: val('prbcs_B_neg'),
+          O_pos: val('prbcs_O_pos'),
+          O_neg: val('prbcs_O_neg'),
+          AB_pos: val('prbcs_AB_pos'),
+          AB_neg: val('prbcs_AB_neg')
+        },
+        ffp: {
+          A: val('ffp_A'),
+          B: val('ffp_B'),
+          O: val('ffp_O'),
+          AB: val('ffp_AB')
+        },
+        fp: {
+          A: val('fp_A'),
+          B: val('fp_B'),
+          O: val('fp_O'),
+          AB: val('fp_AB')
+        },
+        platelets: {
+          A_pos: val('plt_A_pos'),
+          A_neg: val('plt_A_neg'),
+          B_pos: val('plt_B_pos'),
+          B_neg: val('plt_B_neg'),
+          O_pos: val('plt_O_pos'),
+          O_neg: val('plt_O_neg'),
+          AB_pos: val('plt_AB_pos'),
+          AB_neg: val('plt_AB_neg')
+        }
+      };
+    }
+
+    async function syncToCloud(runImmediately = false) {
+      const token = localStorage.getItem('mohp_gh_token');
+      const repo = localStorage.getItem('mohp_gh_repo') || DEFAULT_REPO;
+      if (!token || !repo) {
+        toggleSettings();
+        showStatus('⚠️ يرجى إدخال GitHub Token في الإعدادات أولاً.', 'error');
+        return;
+      }
+
+      const btnSchedule = document.getElementById('btnSchedule');
+      const btnSubmitNow = document.getElementById('btnSubmitNow');
+      btnSchedule.disabled = true;
+      btnSubmitNow.disabled = true;
+
+      try {
+        showStatus('⏳ جاري حفظ الأرقام على السحابة...', 'info');
+        const payload = buildStockPayload();
+        const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+        await putRepoFile(repo, token, 'stock_data.json', contentBase64, `Update blood stock data (${payload.source_date})`);
+
+        if (runImmediately) {
+          showStatus('🚀 تم حفظ الأرقام! جاري تشغيل البوت لتسجيل الرصيد على موقع الوزارة الآن...', 'info');
+          const dispatchUrl = `https://api.github.com/repos/${repo}/actions/workflows/auto_submit.yml/dispatches`;
+          const dispResp = await fetch(dispatchUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/vnd.github+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ref: 'main',
+              inputs: { dry_run: 'false' }
+            })
+          });
+
+          if (!dispResp.ok) {
+            const errData = await dispResp.json();
+            throw new Error(errData.message || 'فشل إطلاق البوت الفوري');
+          }
+
+          showStatus('🎉 تم إطلاق البوت الآن! خلال 40 ثانية سيتم تسجيل الرصيد على الموقع.', 'success');
+        } else {
+          showStatus('✅ تم حفظ الأرقام بنجاح! سيقوم البوت السحابي بتسجيلها تلقائياً الساعة 7 صباحاً و 7 مساءً وأنت نايم.', 'success');
+        }
+      } catch (err) {
+        showStatus('❌ خطأ: ' + err.message, 'error');
+      } finally {
+        btnSchedule.disabled = false;
+        btnSubmitNow.disabled = false;
+      }
+    }
+
+    loadSettings();
+  </script>
+</body>
+</html>
