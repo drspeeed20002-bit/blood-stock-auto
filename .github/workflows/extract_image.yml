@@ -58,7 +58,7 @@ jobs:
           }"""
 
           payload = {
-              "model": "openai/gpt-4o",
+              "model": "gpt-4o",
               "response_format": {"type": "json_object"},
               "messages": [
                   {
@@ -76,7 +76,7 @@ jobs:
           }
 
           req = urllib.request.Request(
-              "https://models.github.ai/inference/chat/completions",
+              "https://models.inference.ai.azure.com/chat/completions",
               data=json.dumps(payload).encode("utf-8"),
               headers={
                   "Content-Type": "application/json",
