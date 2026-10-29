@@ -1,0 +1,38 @@
+{
+  "updated_at": "2026-10-28T11:15:00+03:00",
+  "source_date": "2026-10-28",
+  "auto_schedule_enabled": true,
+  "prbcs": {
+    "under_test": 19,
+    "A_pos": 13,
+    "A_neg": 1,
+    "B_pos": 19,
+    "B_neg": 2,
+    "O_pos": 7,
+    "O_neg": 2,
+    "AB_pos": 3,
+    "AB_neg": 0
+  },
+  "ffp": {
+    "A": 142,
+    "B": 182,
+    "O": 231,
+    "AB": 12
+  },
+  "fp": {
+    "A": 0,
+    "B": 0,
+    "O": 0,
+    "AB": 0
+  },
+  "platelets": {
+    "A_pos": 0,
+    "A_neg": 0,
+    "B_pos": 0,
+    "B_neg": 0,
+    "O_pos": 0,
+    "O_neg": 0,
+    "AB_pos": 0,
+    "AB_neg": 0
+  }
+}
