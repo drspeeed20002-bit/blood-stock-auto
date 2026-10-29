@@ -452,18 +452,23 @@
 
     <!-- Actions -->
     <div class="actions-card">
-      <div class="toggle-row">
-        <span>⏰ تفعيل التسجيل التلقائي (7 ص و 7 م وأنت نايم)</span>
-        <input type="checkbox" id="autoScheduleToggle" checked style="width:20px; height:20px;" />
-      </div>
-
       <button class="btn btn-green" id="btnSchedule" onclick="syncToCloud(false)">
-        🌙 حفظ الأرقام للتسجيل التلقائي (7 ص / 7 م)
+        💾 1. حفظ الأرقام المستخرجة من الصورة
       </button>
 
-      <button class="btn btn-red" id="btnSubmitNow" onclick="syncToCloud(true)">
-        🚀 حفظ وإرسال للموقع الآن فوراً
+      <button class="btn btn-red" id="btnOpenMohp" onclick="copyHelperAndOpenMohp()">
+        📲 2. افتح موقع الوزارة (لتسجيل فوري أو وضع النوم 7 ص)
       </button>
+
+      <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:12px; font-size:12.5px; color:#9a3412; line-height:1.7;">
+        <b>💡 كيف يعمل على موبايلك المعتمد بضغطة واحدة؟</b><br>
+        لأن موقع الوزارة مربوط ببصمة موبايلك المعتمد فقط (وليس أي سيرفر خارج مصر):
+        <ol style="margin-right:18px; margin-top:4px;">
+          <li>اضغط الزر الأحمر فوق (هينسخ كود المساعد الذكي ويفتح موقع الوزارة).</li>
+          <li>أول مرة بس: احفظ صفحة موقع الوزارة في مفضلة Chrome (⭐)، وعدّل رابط المفضلة الصق فيه الكود المنسوخ وسمّيها <b>"سجل الرصيد"</b>.</li>
+          <li>بعد كده جوه موقع الوزارة، اكتب في شريط العنوان فوق كلمة <b>سجل الرصيد</b> واختارها: هتفتحلك لوحة فيها زرار <b>(سجل الآن في ثانية)</b> وزرار <b>(وضع النوم الليلي: يسجل لوحده 6:55 الصبح وأنت نايم)</b>!</li>
+        </ol>
+      </div>
     </div>
 
   </div>
@@ -776,7 +781,7 @@
       return {
         updated_at: new Date().toISOString(),
         source_date: new Date().toISOString().slice(0, 10),
-        auto_schedule_enabled: document.getElementById('autoScheduleToggle').checked,
+        auto_schedule_enabled: true,
         prbcs: {
           under_test: val('prbcs_under_test'),
           A_pos: val('prbcs_A_pos'),
@@ -813,6 +818,20 @@
       };
     }
 
+    async function copyHelperAndOpenMohp() {
+      await syncToCloud(false);
+      const bookmarkletCode = "javascript:fetch('https://drspeeed20002-bit.github.io/blood-stock-auto/autofill.js?t='+Date.now()).then(r=>r.text()).then(eval)";
+      try {
+        await navigator.clipboard.writeText(bookmarkletCode);
+        showStatus('✅ تم حفظ الأرقام ونسخ كود المساعد الذكي! جاري فتح موقع الوزارة...', 'success');
+      } catch (e) {
+        prompt('انسخ هذا الكود:', bookmarkletCode);
+      }
+      setTimeout(() => {
+        window.open('https://geohealthmap.mohp.gov.eg/gis/blood_stocks_registration.php', '_blank');
+      }, 900);
+    }
+
     async function syncToCloud(runImmediately = false) {
       const token = localStorage.getItem('mohp_gh_token');
       const repo = localStorage.getItem('mohp_gh_repo') || DEFAULT_REPO;
@@ -823,46 +842,18 @@
       }
 
       const btnSchedule = document.getElementById('btnSchedule');
-      const btnSubmitNow = document.getElementById('btnSubmitNow');
-      btnSchedule.disabled = true;
-      btnSubmitNow.disabled = true;
+      if (btnSchedule) btnSchedule.disabled = true;
 
       try {
         showStatus('⏳ جاري حفظ الأرقام على السحابة...', 'info');
         const payload = buildStockPayload();
         const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
         await putRepoFile(repo, token, 'stock_data.json', contentBase64, `Update blood stock data (${payload.source_date})`);
-
-        if (runImmediately) {
-          showStatus('🚀 تم حفظ الأرقام! جاري تشغيل البوت لتسجيل الرصيد على موقع الوزارة الآن...', 'info');
-          const dispatchUrl = `https://api.github.com/repos/${repo}/actions/workflows/auto_submit.yml/dispatches`;
-          const dispResp = await fetch(dispatchUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/vnd.github+json',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              ref: 'main',
-              inputs: { dry_run: 'false' }
-            })
-          });
-
-          if (!dispResp.ok) {
-            const errData = await dispResp.json();
-            throw new Error(errData.message || 'فشل إطلاق البوت الفوري');
-          }
-
-          showStatus('🎉 تم إطلاق البوت الآن! خلال 40 ثانية سيتم تسجيل الرصيد على الموقع.', 'success');
-        } else {
-          showStatus('✅ تم حفظ الأرقام بنجاح! سيقوم البوت السحابي بتسجيلها تلقائياً الساعة 7 صباحاً و 7 مساءً وأنت نايم.', 'success');
-        }
+        showStatus('✅ تم حفظ الأرقام بنجاح! جاهزة للملء التلقائي ووضع النوم الليلي على موقع الوزارة.', 'success');
       } catch (err) {
         showStatus('❌ خطأ: ' + err.message, 'error');
       } finally {
-        btnSchedule.disabled = false;
-        btnSubmitNow.disabled = false;
+        if (btnSchedule) btnSchedule.disabled = false;
       }
     }
 
